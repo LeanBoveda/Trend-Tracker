@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Agregamos useEffect
 import { mockAudios, mockChallenges, mockHooks } from './data/mockData.js';
 import Header from './components/Header.jsx';
 import Navigation from './components/Navigation.jsx';
 import { AudioCard, ChallengeCard, HookCard } from './components/Cards.jsx';
-// IMPORTAMOS LA NUEVA VISTA
 import ReportView from './components/ReportView.jsx';
 import ProfileView from './components/ProfileView.jsx';
 import { SkeletonCard } from './components/SkeletonLoader.jsx';
 import LoginView from './components/LoginView.jsx';
+// Importamos supabase para escuchar la sesión
+import { supabase } from './supabaseClient.js'; 
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,10 +17,39 @@ export default function App() {
   const [platformFilter, setPlatformFilter] = useState('Todos');
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [savedItems, setSavedItems] = useState([]);
-  const [showProfile, setShowProfile] = useState(false);
-  // NUEVO ESTADO PARA EL REPORTE
-  const [isLoading, setIsLoading] = useState(false);
+  
   const [showReport, setShowReport] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [authScreen, setAuthScreen] = useState('login');
+  // --- ESCUCHA DE SESIÓN EN TIEMPO REAL ---
+  useEffect(() => {
+    // 1. Revisa si ya hay una sesión activa al abrir la página
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // 2. Escucha si el usuario entra o sale en tiempo real
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (!isAuthenticated) {
+      if (authScreen === 'register') {
+        return <RegisterView onBackToLogin={() => setAuthScreen('login')} />;
+      }
+      return <LoginView onNavigateToRegister={() => setAuthScreen('register')} />;
+    }
+    
+  const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
+    setIsLoading(true);
+    setActiveTab(newTab);
+    setTimeout(() => { setIsLoading(false); }, 600);
+  };
 
   const toggleSave = (id, type) => {
     const isSaved = savedItems.some(item => item.id === id && item.type === type);
@@ -29,7 +59,7 @@ export default function App() {
       setSavedItems([...savedItems, { id, type }]);
     }
   };
-  
+
   const checkIfSaved = (id, type) => savedItems.some(item => item.id === id && item.type === type);
 
   const filterData = (data) => {
@@ -40,25 +70,14 @@ export default function App() {
       return matchSearch && matchPlatform && matchCategory;
     });
   };
-const handleTabChange = (newTab) => {
-    if (newTab === activeTab) return; // Si toca la misma pestaña, no hace nada
-    
-    setIsLoading(true);
-    setActiveTab(newTab);
-    
-    // Simulamos que la base de datos tarda 600ms en responder
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
-  };
-  
+
+  // SI NO ESTÁ AUTENTICADO, MUESTRA EL LOGIN
   if (!isAuthenticated) {
-    return <LoginView onLogin={() => setIsAuthenticated(true)} />;
+    return <LoginView />;
   }
+
   return (
-    
     <div className="min-h-screen bg-gray-950 text-gray-100 font-sans">
-      
       <Header 
         searchQuery={searchQuery} setSearchQuery={setSearchQuery}
         platformFilter={platformFilter} setPlatformFilter={setPlatformFilter}
@@ -66,7 +85,6 @@ const handleTabChange = (newTab) => {
         onOpenProfile={() => { setShowProfile(true); setShowReport(false); }}
       />
 
-    {/* LÓGICA DE VISTAS PRINCIPALES */}
       {showProfile ? (
         <main className="max-w-4xl mx-auto p-4 pb-20">
           <ProfileView onClose={() => setShowProfile(false)} />
@@ -88,15 +106,12 @@ const handleTabChange = (newTab) => {
                 <SkeletonCard />
               </div>
             ) : (
-              /* ESTE FRAGMENTO <> ES LA CLAVE PARA QUE NO DE ERROR */
               <>
-                {/* DASHBOARD */}
                 {activeTab === 'dashboard' && (
                   <div className="space-y-6 animate-fade-in">
                     <div className="bg-gradient-to-br from-purple-900 to-gray-900 p-6 rounded-2xl border border-purple-700/50">
                       <h2 className="text-xl font-bold mb-2">🔥 Top Tendencia del Día</h2>
                       <p className="text-gray-300 text-sm mb-4">El nicho de <span className="text-pink-400 font-bold">Fitness</span> está experimentando un pico inusual en TikTok hoy. Usa sonidos tipo Phonk.</p>
-                      
                       <button 
                         onClick={() => setShowReport(true)}
                         className="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition cursor-pointer shadow-lg shadow-pink-600/30"
@@ -117,7 +132,6 @@ const handleTabChange = (newTab) => {
                   </div>
                 )}
 
-                {/* AUDIOS */}
                 {activeTab === 'audios' && (
                   <div className="space-y-4 animate-fade-in">
                     {filterData(mockAudios).map(audio => (
@@ -126,7 +140,6 @@ const handleTabChange = (newTab) => {
                   </div>
                 )}
 
-                {/* RETOS */}
                 {activeTab === 'retos' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
                     {filterData(mockChallenges).map(reto => (
@@ -135,7 +148,6 @@ const handleTabChange = (newTab) => {
                   </div>
                 )}
 
-                {/* HOOKS */}
                 {activeTab === 'hooks' && (
                   <div className="space-y-4 animate-fade-in">
                     {filterData(mockHooks).map(hook => (
@@ -144,7 +156,6 @@ const handleTabChange = (newTab) => {
                   </div>
                 )}
 
-                {/* GUARDADOS */}
                 {activeTab === 'guardados' && (
                   <div className="space-y-6 animate-fade-in">
                     {savedItems.length === 0 ? (
@@ -187,7 +198,6 @@ const handleTabChange = (newTab) => {
                 )}
               </>
             )}
-            
           </main>
         </>
       )}
