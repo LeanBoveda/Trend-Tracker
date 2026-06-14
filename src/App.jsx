@@ -83,10 +83,20 @@ export default function App() {
   const checkIfSaved = (id, type) => savedItems.some(item => item.id === id && item.type === type);
 
   const filterData = (data) => {
+    // SALVAVIDAS 1: Si los datos aún no llegaron de Supabase, devuelve un arreglo vacío en vez de romper la app
+    if (!data || !Array.isArray(data)) return [];
+
     return data.filter(item => {
-      const matchSearch = (item.title || item.text).toLowerCase().includes(searchQuery.toLowerCase());
-      const matchPlatform = platformFilter === 'Todos' || item.platform === platformFilter || item.platform === "Todos";
-      const matchCategory = categoryFilter === 'Todos' || item.category === categoryFilter || item.category === "General";
+      // SALVAVIDAS 2: Evita errores si 'title' o 'text' vienen vacíos de la base de datos
+      const textToSearch = item.title || item.text || "";
+      const matchSearch = textToSearch.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const itemPlatform = item.platform || "Todos";
+      const matchPlatform = platformFilter === 'Todos' || itemPlatform === platformFilter || itemPlatform === "Todos";
+      
+      const itemCategory = item.category || "General";
+      const matchCategory = categoryFilter === 'Todos' || itemCategory === categoryFilter || itemCategory === "General";
+      
       return matchSearch && matchPlatform && matchCategory;
     });
   };
@@ -154,7 +164,7 @@ export default function App() {
 
                 {activeTab === 'audios' && (
                   <div className="space-y-4 animate-fade-in">
-                    {filterData(Audios).map(audio => (
+                    {filterData(audios).map(audio => (
                       <AudioCard key={`audio-${audio.id}`} audio={audio} isSaved={checkIfSaved(audio.id, 'audio')} onToggleSave={() => toggleSave(audio.id, 'audio')} />
                     ))}
                   </div>
@@ -162,15 +172,20 @@ export default function App() {
 
                 {activeTab === 'retos' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
-                    {filterData(Challenges).map(reto => (
-                      <ChallengeCard key={`reto-${reto.id}`} reto={reto} isSaved={checkIfSaved(reto.id, 'reto')} onToggleSave={() => toggleSave(reto.id, 'reto')} />
+                    {filterData(retos).map(reto => (
+                      <ChallengeCard 
+                        key={`reto-${reto.id}`} 
+                        reto={reto} // <--- Asegúrate que diga 'reto' aquí
+                        isSaved={checkIfSaved(reto.id, 'reto')} 
+                        onToggleSave={() => toggleSave(reto.id, 'reto')} 
+                      />
                     ))}
                   </div>
                 )}
 
                 {activeTab === 'hooks' && (
                   <div className="space-y-4 animate-fade-in">
-                    {filterData(Hooks).map(hook => (
+                    {filterData(hooks).map(hook => (
                       <HookCard key={`hook-${hook.id}`} hook={hook} isSaved={checkIfSaved(hook.id, 'hook')} onToggleSave={() => toggleSave(hook.id, 'hook')} />
                     ))}
                   </div>
@@ -189,7 +204,7 @@ export default function App() {
                         {savedItems.some(item => item.type === 'audio') && (
                           <div className="space-y-4">
                             <h3 className="font-bold text-pink-500 border-b border-gray-800 pb-2">Audios Guardados</h3>
-                            {Audios.filter(a => checkIfSaved(a.id, 'audio')).map(audio => (
+                            {audios.filter(a => checkIfSaved(a.id, 'audio')).map(audio => (
                               <AudioCard key={`saved-audio-${audio.id}`} audio={audio} isSaved={true} onToggleSave={() => toggleSave(audio.id, 'audio')} />
                             ))}
                           </div>
@@ -198,7 +213,7 @@ export default function App() {
                           <div className="space-y-4">
                             <h3 className="font-bold text-yellow-500 border-b border-gray-800 pb-2">Retos Guardados</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {Challenges.filter(r => checkIfSaved(r.id, 'reto')).map(reto => (
+                              {retos.filter(r => checkIfSaved(r.id, 'reto')).map(reto => (
                                 <ChallengeCard key={`saved-reto-${reto.id}`} reto={reto} isSaved={true} onToggleSave={() => toggleSave(reto.id, 'reto')} />
                               ))}
                             </div>
@@ -207,7 +222,7 @@ export default function App() {
                         {savedItems.some(item => item.type === 'hook') && (
                           <div className="space-y-4">
                             <h3 className="font-bold text-purple-500 border-b border-gray-800 pb-2">Ganchos Guardados</h3>
-                            {Hooks.filter(h => checkIfSaved(h.id, 'hook')).map(hook => (
+                            {hooks.filter(h => checkIfSaved(h.id, 'hook')).map(hook => (
                               <HookCard key={`saved-hook-${hook.id}`} hook={hook} isSaved={true} onToggleSave={() => toggleSave(hook.id, 'hook')} />
                             ))}
                           </div>
