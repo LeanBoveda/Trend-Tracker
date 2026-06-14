@@ -1,16 +1,15 @@
 import { useState } from 'react';
+// IMPORTAMOS SUPABASE
+import { supabase } from '../supabaseClient.js';
 
 export default function ProfileView({ onClose }) {
-  // Estados locales para simular los datos del usuario
   const [name, setName] = useState('Creador Pro');
   const [selectedPlatforms, setSelectedPlatforms] = useState(['TikTok', 'Instagram']);
   const [selectedNiches, setSelectedNiches] = useState(['Fitness', 'Lifestyle']);
 
-  // Opciones disponibles
   const platforms = ['TikTok', 'Instagram', 'YouTube'];
   const niches = ['Humor', 'Lifestyle', 'Fitness', 'Cocina', 'Emprendimiento', 'Gaming'];
 
-  // Lógica para seleccionar/deseleccionar múltiples opciones
   const toggleSelection = (item, list, setList) => {
     if (list.includes(item)) {
       setList(list.filter(i => i !== item));
@@ -22,6 +21,14 @@ export default function ProfileView({ onClose }) {
   const handleSave = () => {
     alert('¡Preferencias guardadas con éxito!');
     onClose();
+  };
+
+  // --- LÓGICA DE CERRAR SESIÓN REAL ---
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert(`Error al cerrar sesión: ${error.message}`);
+    }
   };
 
   return (
@@ -47,8 +54,6 @@ export default function ProfileView({ onClose }) {
 
         {/* Formulario */}
         <div className="space-y-8">
-          
-          {/* Nombre */}
           <div>
             <label className="block text-sm font-bold text-gray-300 mb-2">Nombre o Username</label>
             <input 
@@ -59,7 +64,6 @@ export default function ProfileView({ onClose }) {
             />
           </div>
 
-          {/* Plataformas */}
           <div>
             <label className="block text-sm font-bold text-gray-300 mb-3">Redes Principales</label>
             <div className="flex flex-wrap gap-3">
@@ -79,7 +83,6 @@ export default function ProfileView({ onClose }) {
             </div>
           </div>
 
-          {/* Nichos */}
           <div>
             <label className="block text-sm font-bold text-gray-300 mb-3">Tus Nichos de Contenido</label>
             <div className="flex flex-wrap gap-3">
@@ -98,17 +101,26 @@ export default function ProfileView({ onClose }) {
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* Botón de Guardar */}
-        <div className="mt-10 pt-6 border-t border-gray-700 flex justify-end">
+        {/* ACCIONES DEL PIE DE TARJETA */}
+        <div className="mt-10 pt-6 border-t border-gray-700 flex justify-between items-center gap-4">
+          
+          {/* BOTÓN DE LOG OUT */}
+          <button 
+            onClick={handleLogout} 
+            className="border border-red-500/40 hover:bg-red-500/10 text-red-400 font-bold py-3 px-6 rounded-xl transition cursor-pointer flex items-center gap-2 text-sm"
+          >
+            Cerrar Sesión 🚪
+          </button>
+
           <button 
             onClick={handleSave} 
-            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold py-3 px-8 rounded-xl transition cursor-pointer shadow-lg shadow-purple-500/30"
+            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold py-3 px-8 rounded-xl transition cursor-pointer shadow-lg shadow-purple-500/30 text-sm"
           >
             Guardar Configuración
           </button>
+          
         </div>
       </div>
     </div>
