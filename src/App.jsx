@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'; // Agregamos useEffect
-import { mockAudios, mockChallenges, mockHooks } from './data/mockData.js';
 import Header from './components/Header.jsx';
 import Navigation from './components/Navigation.jsx';
 import { AudioCard, ChallengeCard, HookCard } from './components/Cards.jsx';
@@ -17,25 +16,46 @@ export default function App() {
   const [platformFilter, setPlatformFilter] = useState('Todos');
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [savedItems, setSavedItems] = useState([]);
-  
+  const [audios, setAudios] = useState([]);
+  const [retos, setRetos] = useState([]);
+  const [hooks, setHooks] = useState([]);
   const [showReport, setShowReport] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authScreen, setAuthScreen] = useState('login');
   // --- ESCUCHA DE SESIÓN EN TIEMPO REAL ---
-  useEffect(() => {
-    // 1. Revisa si ya hay una sesión activa al abrir la página
+ useEffect(() => {
+    // 1. Revisar sesión al inicio
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
+      if (session) fetchTrends(); // Si hay sesión, descargamos los datos
     });
 
-    // 2. Escucha si el usuario entra o sale en tiempo real
+    // 2. Escuchar cuando el usuario hace login
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
+      if (session) fetchTrends(); // Si entró, descargamos los datos
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // --- NUEVA FUNCIÓN QUE HABLA CON SUPABASE ---
+  const fetchTrends = async () => {
+    setIsLoading(true);
+    
+    // Descargamos tablas
+    const { data: audiosData } = await supabase.from('audios').select('*');
+    if (audiosData) setAudios(audiosData);
+    
+    const { data: retosData } = await supabase.from('retos').select('*');
+    if (retosData) setRetos(retosData);
+    
+    const { data: hooksData } = await supabase.from('hooks').select('*');
+    if (hooksData) setHooks(hooksData);
+    
+    setIsLoading(false);
+  };
 
   if (!isAuthenticated) {
       if (authScreen === 'register') {
@@ -134,7 +154,7 @@ export default function App() {
 
                 {activeTab === 'audios' && (
                   <div className="space-y-4 animate-fade-in">
-                    {filterData(mockAudios).map(audio => (
+                    {filterData(Audios).map(audio => (
                       <AudioCard key={`audio-${audio.id}`} audio={audio} isSaved={checkIfSaved(audio.id, 'audio')} onToggleSave={() => toggleSave(audio.id, 'audio')} />
                     ))}
                   </div>
@@ -142,7 +162,7 @@ export default function App() {
 
                 {activeTab === 'retos' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
-                    {filterData(mockChallenges).map(reto => (
+                    {filterData(Challenges).map(reto => (
                       <ChallengeCard key={`reto-${reto.id}`} reto={reto} isSaved={checkIfSaved(reto.id, 'reto')} onToggleSave={() => toggleSave(reto.id, 'reto')} />
                     ))}
                   </div>
@@ -150,7 +170,7 @@ export default function App() {
 
                 {activeTab === 'hooks' && (
                   <div className="space-y-4 animate-fade-in">
-                    {filterData(mockHooks).map(hook => (
+                    {filterData(Hooks).map(hook => (
                       <HookCard key={`hook-${hook.id}`} hook={hook} isSaved={checkIfSaved(hook.id, 'hook')} onToggleSave={() => toggleSave(hook.id, 'hook')} />
                     ))}
                   </div>
@@ -169,7 +189,7 @@ export default function App() {
                         {savedItems.some(item => item.type === 'audio') && (
                           <div className="space-y-4">
                             <h3 className="font-bold text-pink-500 border-b border-gray-800 pb-2">Audios Guardados</h3>
-                            {mockAudios.filter(a => checkIfSaved(a.id, 'audio')).map(audio => (
+                            {Audios.filter(a => checkIfSaved(a.id, 'audio')).map(audio => (
                               <AudioCard key={`saved-audio-${audio.id}`} audio={audio} isSaved={true} onToggleSave={() => toggleSave(audio.id, 'audio')} />
                             ))}
                           </div>
@@ -178,7 +198,7 @@ export default function App() {
                           <div className="space-y-4">
                             <h3 className="font-bold text-yellow-500 border-b border-gray-800 pb-2">Retos Guardados</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {mockChallenges.filter(r => checkIfSaved(r.id, 'reto')).map(reto => (
+                              {Challenges.filter(r => checkIfSaved(r.id, 'reto')).map(reto => (
                                 <ChallengeCard key={`saved-reto-${reto.id}`} reto={reto} isSaved={true} onToggleSave={() => toggleSave(reto.id, 'reto')} />
                               ))}
                             </div>
@@ -187,7 +207,7 @@ export default function App() {
                         {savedItems.some(item => item.type === 'hook') && (
                           <div className="space-y-4">
                             <h3 className="font-bold text-purple-500 border-b border-gray-800 pb-2">Ganchos Guardados</h3>
-                            {mockHooks.filter(h => checkIfSaved(h.id, 'hook')).map(hook => (
+                            {Hooks.filter(h => checkIfSaved(h.id, 'hook')).map(hook => (
                               <HookCard key={`saved-hook-${hook.id}`} hook={hook} isSaved={true} onToggleSave={() => toggleSave(hook.id, 'hook')} />
                             ))}
                           </div>
