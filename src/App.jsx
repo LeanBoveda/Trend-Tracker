@@ -7,8 +7,8 @@ import ReportView from './components/ReportView.jsx';
 import ProfileView from './components/ProfileView.jsx';
 import { SkeletonCard } from './components/SkeletonLoader.jsx';
 import LoginView from './components/LoginView.jsx';
-// Importamos supabase para escuchar la sesión
 import { supabase } from './supabaseClient.js'; 
+import RegisterView from './components/RegisterView.jsx';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
