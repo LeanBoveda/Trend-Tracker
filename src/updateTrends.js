@@ -26,7 +26,7 @@ async function procesarDatosConIA(textoBruto) {
 
   const prompt = `
     Analiza el siguiente texto bruto de tendencias y clasifícalo estrictamente en un objeto JSON con tres arreglos: 'audios', 'retos' y 'hooks'.
-    Deves responder ÚNICAMENTE el objeto JSON puro, sin textos extras ni formato markdown (sin \`\`\`json).
+    Debes responder ÚNICAMENTE el objeto JSON puro, sin textos extras ni formato markdown (sin \`\`\`json).
     
     Campos:
     - Para audios: title, artist, platform, category, growth, isHot (boolean)
@@ -37,7 +37,7 @@ async function procesarDatosConIA(textoBruto) {
   `;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -46,10 +46,23 @@ async function procesarDatosConIA(textoBruto) {
     });
 
     const data = await response.json();
+
+    // 🔍 LÍNEA DE ESPIONAJE: Si la respuesta no es la esperada, imprimimos el porqué
+    if (data.error) {
+      console.log("❌ Error oficial de Google Gemini:");
+      console.dir(data.error, { depth: null });
+      return null;
+    }
+
+    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+      console.log("❌ Respuesta extraña de la IA (sin candidatos):", JSON.stringify(data, null, 2));
+      return null;
+    }
+
     const textoJson = data.candidates[0].content.parts[0].text;
     return JSON.parse(textoJson);
   } catch (error) {
-    console.error("❌ Error al hablar con Gemini:", error);
+    console.error("❌ Error al procesar el flujo de la IA:", error);
     return null;
   }
 }
